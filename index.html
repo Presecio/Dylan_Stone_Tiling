@@ -1666,24 +1666,28 @@ footer{
           <h3>Request your free quote</h3>
           <p>Fields marked * are required. We'll never share your details.</p>
           <form id="quoteForm">
+            <input type="hidden" name="access_key" value="d3581996-34e7-406d-887c-68315b43ec20">
+            <input type="hidden" name="subject" value="New quote request — Dylan Stone Tiling website">
+            <input type="hidden" name="from_name" value="Dylan Stone Tiling Website">
+            <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off">
             <div class="form-row">
               <div class="field">
                 <label for="fName">Name *</label>
-                <input type="text" id="fName" placeholder="Your full name" required>
+                <input type="text" id="fName" name="name" placeholder="Your full name" required>
               </div>
               <div class="field">
                 <label for="fPhone">Phone *</label>
-                <input type="tel" id="fPhone" placeholder="04xx xxx xxx" required>
+                <input type="tel" id="fPhone" name="phone" placeholder="04xx xxx xxx" required>
               </div>
             </div>
             <div class="form-row">
               <div class="field">
                 <label for="fSuburb">Suburb *</label>
-                <input type="text" id="fSuburb" placeholder="e.g. Merewether" required>
+                <input type="text" id="fSuburb" name="suburb" placeholder="e.g. Merewether" required>
               </div>
               <div class="field">
                 <label for="fService">Service</label>
-                <select id="fService">
+                <select id="fService" name="service">
                   <option>Bathroom Tiling</option>
                   <option>Natural Stone Installation</option>
                   <option>Paving / Outdoor</option>
@@ -1696,9 +1700,10 @@ footer{
             </div>
             <div class="field">
               <label for="fMessage">Tell us about the job</label>
-              <textarea id="fMessage" placeholder="Room size, materials in mind, rough timeline..."></textarea>
+              <textarea id="fMessage" name="message" placeholder="Room size, materials in mind, rough timeline..."></textarea>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">Send Quote Request</button>
+            <button type="submit" class="btn btn-primary btn-block" id="quoteSubmitBtn">Send Quote Request</button>
+            <p class="form-note" id="formError" style="display:none; color:#c0625a;">Something went wrong sending your request — please call us directly instead.</p>
             <p class="form-note">Prefer to talk it through? Call <a href="tel:0421801831" style="color:var(--teal-light); font-weight:700;">0421 801 831</a> directly.</p>
           </form>
         </div>
@@ -1879,15 +1884,40 @@ if (revTrack && revNext && revPrev) {
   revPrev.addEventListener('click', () => revTrack.scrollBy({ left: -380, behavior: 'smooth' }));
 }
 
-// quote form (front-end only demo submit)
+// quote form — real submission via Web3Forms
 const quoteForm = document.getElementById('quoteForm');
 if (quoteForm) {
   quoteForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const def = document.getElementById('formDefault');
     const suc = document.getElementById('formSuccess');
-    if (def) def.style.display = 'none';
-    if (suc) suc.classList.add('show');
+    const errEl = document.getElementById('formError');
+    const btn = document.getElementById('quoteSubmitBtn');
+    if (errEl) errEl.style.display = 'none';
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    const formData = new FormData(quoteForm);
+    const payload = Object.fromEntries(formData.entries());
+
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload)
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          if (def) def.style.display = 'none';
+          if (suc) suc.classList.add('show');
+        } else {
+          if (errEl) errEl.style.display = 'block';
+          if (btn) { btn.disabled = false; btn.textContent = 'Send Quote Request'; }
+        }
+      })
+      .catch(() => {
+        if (errEl) errEl.style.display = 'block';
+        if (btn) { btn.disabled = false; btn.textContent = 'Send Quote Request'; }
+      });
   });
 }
 
